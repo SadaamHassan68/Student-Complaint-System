@@ -1,3 +1,58 @@
+<?php
+require_once 'includes/config.php';
+require_once 'includes/functions.php';
+
+// Check if already logged in
+if (isLoggedIn()) {
+    if (hasRole('admin')) {
+        redirect('admin/dashboard.php');
+    } elseif (hasRole('staff')) {
+        redirect('staff/dashboard.php');
+    } else {
+        redirect('student/dashboard.php');
+    }
+}
+
+$error = '';
+
+if ($_SERVER['REQUEST_METHOD'] == 'POST') {
+    $email = sanitizeInput($_POST['email']);
+    $password = $_POST['password'];
+
+    // Validation
+    if (empty($email) || empty($password)) {
+        $error = 'Please fill in all fields.';
+    } else {
+        try {
+            // Check user credentials
+            $stmt = $pdo->prepare("SELECT id, username, email, password, role FROM users WHERE email = ?");
+            $stmt->execute([$email]);
+            $user = $stmt->fetch();
+
+            if ($user && verifyPassword($password, $user['password'])) {
+                // Login successful
+                $_SESSION['user_id'] = $user['id'];
+                $_SESSION['username'] = $user['username'];
+                $_SESSION['email'] = $user['email'];
+                $_SESSION['role'] = $user['role'];
+
+                // Redirect based on role
+                if ($user['role'] === 'admin') {
+                    redirect('admin/dashboard.php');
+                } elseif ($user['role'] === 'staff') {
+                    redirect('staff/dashboard.php');
+                } else {
+                    redirect('student/dashboard.php');
+                }
+            } else {
+                $error = 'Invalid email or password.';
+            }
+        } catch(PDOException $e) {
+            $error = 'An error occurred during login. Please try again.';
+        }
+    }
+}
+?>
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -170,62 +225,6 @@
     </style>
 </head>
 <body>
-    <?php
-    require_once 'includes/config.php';
-    require_once 'includes/functions.php';
-
-    // Check if already logged in
-    if (isLoggedIn()) {
-        if (hasRole('admin')) {
-            redirect('admin/dashboard.php');
-        } elseif (hasRole('staff')) {
-            redirect('staff/dashboard.php');
-        } else {
-            redirect('student/dashboard.php');
-        }
-    }
-
-    $error = '';
-
-    if ($_SERVER['REQUEST_METHOD'] == 'POST') {
-        $email = sanitizeInput($_POST['email']);
-        $password = $_POST['password'];
-
-        // Validation
-        if (empty($email) || empty($password)) {
-            $error = 'Please fill in all fields.';
-        } else {
-            try {
-                // Check user credentials
-                $stmt = $pdo->prepare("SELECT id, username, email, password, role FROM users WHERE email = ?");
-                $stmt->execute([$email]);
-                $user = $stmt->fetch();
-
-                if ($user && verifyPassword($password, $user['password'])) {
-                    // Login successful
-                    $_SESSION['user_id'] = $user['id'];
-                    $_SESSION['username'] = $user['username'];
-                    $_SESSION['email'] = $user['email'];
-                    $_SESSION['role'] = $user['role'];
-
-                    // Redirect based on role
-                    if ($user['role'] === 'admin') {
-                        redirect('admin/dashboard.php');
-                    } elseif ($user['role'] === 'staff') {
-                        redirect('staff/dashboard.php');
-                    } else {
-                        redirect('student/dashboard.php');
-                    }
-                } else {
-                    $error = 'Invalid email or password.';
-                }
-            } catch(PDOException $e) {
-                $error = 'An error occurred during login. Please try again.';
-            }
-        }
-    }
-    ?>
-
     <div class="back-home">
         <a href="index.php" class="btn-back">
             <i class="fas fa-arrow-left me-2"></i>Back to Home

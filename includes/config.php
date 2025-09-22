@@ -7,7 +7,9 @@ define('SITE_URL', 'http://localhost/student_complaient');
 define('SITE_NAME', 'Student Complaint Management System');
 
 // Session Configuration
-session_start();
+if (session_status() === PHP_SESSION_NONE) {
+    session_start();
+}
 
 // Database Connection (SQLite)
 try {

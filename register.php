@@ -1,3 +1,56 @@
+<?php
+require_once 'includes/config.php';
+require_once 'includes/functions.php';
+
+// Check if already logged in
+if (isLoggedIn()) {
+    if (hasRole('admin')) {
+        redirect('admin/dashboard.php');
+    } elseif (hasRole('staff')) {
+        redirect('staff/dashboard.php');
+    } else {
+        redirect('student/dashboard.php');
+    }
+}
+
+$error = '';
+$success = '';
+
+if ($_SERVER['REQUEST_METHOD'] == 'POST') {
+    $username = sanitizeInput($_POST['username']);
+    $email = sanitizeInput($_POST['email']);
+    $password = $_POST['password'];
+    $confirm_password = $_POST['confirm_password'];
+
+    // Validation
+    if (empty($username) || empty($email) || empty($password) || empty($confirm_password)) {
+        $error = 'Please fill in all fields.';
+    } elseif ($password !== $confirm_password) {
+        $error = 'Passwords do not match.';
+    } elseif (strlen($password) < 6) {
+        $error = 'Password must be at least 6 characters long.';
+    } else {
+        try {
+            // Check if email already exists
+            $stmt = $pdo->prepare("SELECT id FROM users WHERE email = ?");
+            $stmt->execute([$email]);
+            
+            if ($stmt->fetch()) {
+                $error = 'Email already exists. Please use a different email.';
+            } else {
+                // Insert new user
+                $hashedPassword = hashPassword($password);
+                $stmt = $pdo->prepare("INSERT INTO users (username, email, password, role) VALUES (?, ?, ?, 'student')");
+                $stmt->execute([$username, $email, $hashedPassword]);
+                
+                $success = 'Registration successful! You can now login.';
+            }
+        } catch(PDOException $e) {
+            $error = 'An error occurred during registration. Please try again.';
+        }
+    }
+}
+?>
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -8,60 +61,6 @@
     <link rel="stylesheet" href="assets/css/style.css">
 </head>
 <body class="bg-light">
-    <?php
-    require_once 'includes/config.php';
-    require_once 'includes/functions.php';
-
-    // Check if already logged in
-    if (isLoggedIn()) {
-        if (hasRole('admin')) {
-            redirect('admin/dashboard.php');
-        } elseif (hasRole('staff')) {
-            redirect('staff/dashboard.php');
-        } else {
-            redirect('student/dashboard.php');
-        }
-    }
-
-    $error = '';
-    $success = '';
-
-    if ($_SERVER['REQUEST_METHOD'] == 'POST') {
-        $username = sanitizeInput($_POST['username']);
-        $email = sanitizeInput($_POST['email']);
-        $password = $_POST['password'];
-        $confirm_password = $_POST['confirm_password'];
-
-        // Validation
-        if (empty($username) || empty($email) || empty($password) || empty($confirm_password)) {
-            $error = 'Please fill in all fields.';
-        } elseif ($password !== $confirm_password) {
-            $error = 'Passwords do not match.';
-        } elseif (strlen($password) < 6) {
-            $error = 'Password must be at least 6 characters long.';
-        } else {
-            try {
-                // Check if email already exists
-                $stmt = $pdo->prepare("SELECT id FROM users WHERE email = ?");
-                $stmt->execute([$email]);
-                
-                if ($stmt->fetch()) {
-                    $error = 'Email already exists. Please use a different email.';
-                } else {
-                    // Insert new user
-                    $hashedPassword = hashPassword($password);
-                    $stmt = $pdo->prepare("INSERT INTO users (username, email, password, role) VALUES (?, ?, ?, 'student')");
-                    $stmt->execute([$username, $email, $hashedPassword]);
-                    
-                    $success = 'Registration successful! You can now login.';
-                }
-            } catch(PDOException $e) {
-                $error = 'An error occurred during registration. Please try again.';
-            }
-        }
-    }
-    ?>
-
     <div class="container mt-5">
         <div class="row justify-content-center">
             <div class="col-md-6 col-lg-5">
@@ -78,7 +77,7 @@
                         <?php if ($success): ?>
                             <div class="alert alert-success">
                                 <?php echo $success; ?>
-                                <br><a href="index.php" class="btn btn-success btn-sm mt-2">Go to Login</a>
+                                <br><a href="login.php" class="btn btn-success btn-sm mt-2">Go to Login</a>
                             </div>
                         <?php else: ?>
                             <form method="POST">
@@ -107,7 +106,7 @@
 
                         <hr>
                         <div class="text-center">
-                            <p class="mb-0">Already have an account? <a href="index.php">Login here</a></p>
+                            <p class="mb-0">Already have an account? <a href="login.php">Login here</a></p>
                         </div>
                     </div>
                 </div>
