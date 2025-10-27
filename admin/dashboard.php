@@ -43,14 +43,14 @@
     ");
     $category_stats = $stmt->fetchAll();
 
-    // Get monthly statistics for the current year (SQLite version)
+    // Get monthly statistics for the current year (MySQL version)
     $stmt = $pdo->query("
         SELECT 
-            CAST(strftime('%m', created_at) AS INTEGER) as month,
+            MONTH(created_at) as month,
             COUNT(*) as count 
         FROM complaints 
-        WHERE strftime('%Y', created_at) = strftime('%Y', 'now')
-        GROUP BY CAST(strftime('%m', created_at) AS INTEGER)
+        WHERE YEAR(created_at) = YEAR(NOW())
+        GROUP BY MONTH(created_at)
         ORDER BY month
     ");
     $monthly_stats = $stmt->fetchAll();

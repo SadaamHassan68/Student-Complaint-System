@@ -106,21 +106,16 @@ function getComplaintStats() {
     }
 }
 
-// Function to check if database tables exist (SQLite version)
+// Function to check if database tables exist (MySQL version)
 function checkDatabaseSetup() {
     global $pdo;
     try {
-        // Check if database file exists
-        if (!file_exists(DB_PATH)) {
-            return false;
-        }
+        // Check if tables exist in MySQL
+        $stmt = $pdo->query("SELECT COUNT(*) FROM information_schema.tables WHERE table_schema = 'student_complaints' AND table_name = 'users'");
+        $usersExists = $stmt->fetchColumn() > 0;
         
-        // Check if tables exist in SQLite
-        $stmt = $pdo->query("SELECT name FROM sqlite_master WHERE type='table' AND name='users'");
-        $usersExists = $stmt->rowCount() > 0;
-        
-        $stmt = $pdo->query("SELECT name FROM sqlite_master WHERE type='table' AND name='complaints'");
-        $complaintsExists = $stmt->rowCount() > 0;
+        $stmt = $pdo->query("SELECT COUNT(*) FROM information_schema.tables WHERE table_schema = 'student_complaints' AND table_name = 'complaints'");
+        $complaintsExists = $stmt->fetchColumn() > 0;
         
         return $usersExists && $complaintsExists;
     } catch(PDOException $e) {

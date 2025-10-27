@@ -92,29 +92,16 @@
     ");
     $overall_stats = $stmt->fetch();
 
-    // Monthly statistics for current year (SQLite version)
+    // Monthly statistics for current year (MySQL version)
     $stmt = $pdo->query("
         SELECT 
-            CAST(strftime('%m', created_at) AS INTEGER) as month,
-            CASE CAST(strftime('%m', created_at) AS INTEGER)
-                WHEN 1 THEN 'January'
-                WHEN 2 THEN 'February'
-                WHEN 3 THEN 'March'
-                WHEN 4 THEN 'April'
-                WHEN 5 THEN 'May'
-                WHEN 6 THEN 'June'
-                WHEN 7 THEN 'July'
-                WHEN 8 THEN 'August'
-                WHEN 9 THEN 'September'
-                WHEN 10 THEN 'October'
-                WHEN 11 THEN 'November'
-                WHEN 12 THEN 'December'
-            END as month_name,
+            MONTH(created_at) as month,
+            MONTHNAME(created_at) as month_name,
             COUNT(*) as count,
             SUM(CASE WHEN status = 'resolved' THEN 1 ELSE 0 END) as resolved
         FROM complaints 
-        WHERE strftime('%Y', created_at) = strftime('%Y', 'now')
-        GROUP BY CAST(strftime('%m', created_at) AS INTEGER)
+        WHERE YEAR(created_at) = YEAR(NOW())
+        GROUP BY MONTH(created_at)
         ORDER BY month
     ");
     $monthly_stats = $stmt->fetchAll();
@@ -132,13 +119,13 @@
     ");
     $category_stats = $stmt->fetchAll();
 
-    // Daily stats for last 30 days (SQLite version)
+    // Daily stats for last 30 days (MySQL version)
     $stmt = $pdo->query("
         SELECT 
             DATE(created_at) as date,
             COUNT(*) as count
         FROM complaints 
-        WHERE created_at >= DATE('now', '-30 days')
+        WHERE created_at >= DATE_SUB(NOW(), INTERVAL 30 DAY)
         GROUP BY DATE(created_at)
         ORDER BY date
     ");
